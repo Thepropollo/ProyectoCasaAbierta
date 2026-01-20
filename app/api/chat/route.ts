@@ -14,94 +14,7 @@ const RASPBERRY_PI_CONFIG = {
 const getRaspberryUrl = () =>
   `http://${RASPBERRY_PI_CONFIG.host}:${RASPBERRY_PI_CONFIG.port}${RASPBERRY_PI_CONFIG.endpoint}`;
 
-function detectCocktailRequest(text: string) {
-  const lowerText = text.toLowerCase();
-
-  // Detectar confirmación explícita
-  // Mejorado para capturar "coca-cola", "tinto de verano", etc.
-  const confirmPattern = /confirmar\s+(?:pedido\s+(?:de\s+)?)?([\w\-\s]+)/i;
-  const confirmMatch = text.match(confirmPattern);
-
-  console.log(`🔍 Analizando mensaje: "${text}"`);
-
-  if (confirmMatch) {
-    const capturedName = confirmMatch[1].trim().toLowerCase();
-    console.log(`✅ Patrón de confirmación detectado. Nombre capturado: "${capturedName}"`);
-
-    // 1. Búsqueda exacta por KEY
-    if (COCKTAIL_RECIPES[capturedName as keyof typeof COCKTAIL_RECIPES]) {
-      console.log(`🎯 Match exacto por KEY: ${capturedName}`);
-      return { cocktailId: capturedName, recipe: COCKTAIL_RECIPES[capturedName as keyof typeof COCKTAIL_RECIPES], confirmed: true };
-    }
-
-    // 2. Búsqueda por coincidencia en KEY o NOMBRE
-    for (const [key, recipe] of Object.entries(COCKTAIL_RECIPES)) {
-      const recipeName = (recipe as any).name.toLowerCase();
-      // Chequear si lo capturado está contenido en el nombre o key, o viceversa
-      if (recipeName.includes(capturedName) || key.includes(capturedName) || capturedName.includes(recipeName) || capturedName.includes(key)) {
-        console.log(`🎯 Match por coincidencia: "${capturedName}" -> ${key} (${recipeName})`);
-        return { cocktailId: key, recipe, confirmed: true };
-      }
-    }
-    console.log(`⚠️ Confirmación detectada pero no se encontró coctel para: "${capturedName}"`);
-  } else {
-    console.log("ℹ️ No se detectó patrón de confirmación explícita");
-  }
-
-  // 3. Confirmación implícita por nombre exacto
-  // Si el mensaje es SOLO el nombre del trago (o muy parecido), asumimos confirmación.
-  const cleanText = lowerText.trim().replace(/[^\w\s\-\u00C0-\u00FF]/g, '');
-
-  for (const [key, recipe] of Object.entries(COCKTAIL_RECIPES)) {
-    const name = (recipe as any).name.toLowerCase();
-
-    // Lista de variaciones aceptadas para confirmación directa
-    const acceptedVariations = [
-      name,
-      key,
-      key.replace('_', ' '),
-      // Variaciones comunes
-      name + " por favor",
-      "dame " + name,
-      "quiero " + name,
-      "un " + name,
-      "una " + name
-    ];
-
-    // Check exact match with variations
-    if (acceptedVariations.some(v => cleanText.includes(v) && cleanText.length < v.length + 10)) {
-      console.log(`🚀 Match directo (implícito boost): "${cleanText}" para ${key}`);
-      return { cocktailId: key, recipe, confirmed: true };
-    }
-
-    // Fix especifico coca-cola
-    if (key === 'coca_cola' && (cleanText.includes('cocacola') || cleanText.includes('coca-cola'))) {
-      console.log(`🚀 Match directo Coca-Cola: "${cleanText}"`);
-      return { cocktailId: key, recipe, confirmed: true };
-    }
-
-    // Fix especifico vinos
-    if (key.includes('vino') && cleanText.includes(name)) {
-      console.log(`🚀 Match directo Vino: "${cleanText}"`);
-      return { cocktailId: key, recipe, confirmed: true };
-    }
-  }
-
-  // Búsqueda normal (seguimos retornando false para intents ambiguos como "quiero un...")
-  for (const [key, recipe] of Object.entries(COCKTAIL_RECIPES)) {
-    if (lowerText.includes((recipe as any).name.toLowerCase()) || lowerText.includes(key)) {
-      return { cocktailId: key, recipe, confirmed: false };
-    }
-  }
-
-  const keywords = ['quiero', 'dame', 'prepara', 'hazme', 'quisiera', 'me gustaría'];
-  const hasCocktailIntent = keywords.some(keyword => lowerText.includes(keyword));
-
-  return hasCocktailIntent ? { intent: 'request', cocktailId: null, confirmed: false } : null;
-}
-
 function generateRaspberryPayload(recipe: any, cocktailId: string) {
-  // ... (unchanged)
   const pumps: any = {};
   let totalMl = 0;
 
@@ -172,31 +85,55 @@ export async function POST(request: NextRequest) {
     }
 
     const groq = new Groq({ apiKey });
-    const cocktailRequest = detectCocktailRequest(message);
-    const isFirstMessage = conversationHistory.length === 0;
 
-    const systemPrompt = `Eres un barman profesional AI amable.
-**INGREDIENTES:**
+    // Construir lista de cócteles para el prompt
+    const cocktailList = Object.entries(COCKTAIL_RECIPES)
+      .map(([id, r]) => `- ID: "${id}" -> Nombre: "${(r as any).name}" (${(r as any).description})`)
+      .join('\n');
+
+    const systemPrompt = `Eres Cocktail AI, un barman experto y carismático. Tu trabajo es recomendar bebidas y, SOLO cuando estés 100% seguro de que el usuario quiere que se prepare una bebida específica AHORA MISMO, emitir la orden de preparación.
+
+**INVENTARIO DISPONIBLE:**
 ${Object.entries(PUMP_CONFIG).map(([_, p]) => `- ${p.ingredient.replace('_', ' ')}`).join('\n')}
 
-**CÓCTELES:**
-${Object.entries(COCKTAIL_RECIPES).map(([_, r]) => `- **${(r as any).name}**: ${Object.keys((r as any).ingredients).join(', ')}`).join('\n')}
+**MENÚ DE CÓCTELES:**
+${cocktailList}
 
-**INSTRUCCIONES:**
-1. Sé conciso (max 200 chars).
-2. Si el usuario dice SOLO el nombre de un trago (ej: "Fanta"), asume que lo quiere: CONFIRMA que lo estás preparando.
-3. Si dice "Quiero un [trago]", pídele confirmación o dile "Escribe el nombre del trago para servirlo".
-4. Usa emojis 🍹.
+**REGLAS DE INTERACCIÓN:**
+1. Sé breve, amable y usa emojis 🍹.
+2. Si el usuario pide una recomendación, sugiere algo del menú pero NO lo sirvas todavía.
+3. Si el usuario pide un trago (ej: "Quiero una sangría"), DEBES PREGUNTAR si lo quiere "tal cual" o con alguna modificación, o simplemente confirmar "¿Te sirvo una Sangría entonces?".
+4. SOLO sirve el trago si el usuario confirma explícitamente (ej: "Sí", "Tal cual", "Dale", "Por favor", o si dice el nombre del trago de forma imperativa como "Dame una Coca Cola").
+5. Para servir un trago, DEBES incluir un bloque JSON oculto al final de tu respuesta con el ID del cóctel.
 
-**SI EL SISTEMA YA ESTÁ PREPARANDO EL TRAGO (detectado automáticamente):**
-- Di algo como: "¡Marchando un [Trago]! 🚀" o "Preparando tu bebida..."
+**COMANDO DE PREPARACIÓN:**
+Para activar la máquina, añade este bloque JSON al final de tu respuesta (el usuario no lo verá, yo lo procesaré):
+\`\`\`json
+{
+  "action": "PREPARE",
+  "cocktail_id": "ID_DEL_COCTEL_EXACTO"
+}
+\`\`\`
 
 **EJEMPLOS:**
-User: "Coca cola"
-Tu: "¡Entendido! Sirviendo Coca-Cola bien fría 🥤"
+User: "¿Qué tienes?"
+AI: "Tenemos Tinto de Verano, Sangría, vinos y refrescos. ¿Te apetece algo fresco? 🍹" (SIN JSON)
 
-User: "Hola"
-Tu: "¡Hola! ¿Qué te sirvo hoy? Tenemos Tinto de Verano, Fanta..."`;
+User: "Dame una Sangría"
+AI: "¿La quieres sola o preparada con Fanta? 🍷" (SIN JSON)
+
+User: "Preparada"
+AI: "¡Marchando una Sangría Preparada! 🚀"
+\`\`\`json
+{ "action": "PREPARE", "cocktail_id": "sangria_preparada" }
+\`\`\`
+
+User: "Una coca cola"
+AI: "¡Claro! Una Coca-Cola bien fría saliendo. 🥤"
+\`\`\`json
+{ "action": "PREPARE", "cocktail_id": "coca_cola" }
+\`\`\`
+`;
 
     // Construir historial de conversación para Groq
     const messages: any[] = [
@@ -211,40 +148,63 @@ Tu: "¡Hola! ¿Qué te sirvo hoy? Tenemos Tinto de Verano, Fanta..."`;
     // Llamar a Groq con historial
     const completion = await groq.chat.completions.create({
       messages,
-      model: 'llama-3.3-70b-versatile', // Modelo actualizado
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0.5, // Un poco más creativo pero preciso
     });
 
-    const responseText = completion.choices[0]?.message?.content || "";
+    let responseText = completion.choices[0]?.message?.content || "";
+    let finalResponseText = responseText;
+    let command: { action: string; cocktail_id: string } | null = null;
 
-    // Preparar respuesta
+    // Detectar y extraer bloque JSON
+    const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      try {
+        command = JSON.parse(jsonMatch[1]);
+        // Quitar el JSON de la respuesta visible al usuario
+        finalResponseText = responseText.replace(jsonMatch[0], '').trim();
+      } catch (e) {
+        console.error("Error parseando JSON del LLM:", e);
+      }
+    }
+
+    // Preparar respuesta base
     const finalResponse: any = {
-      text: responseText,
+      text: finalResponseText,
       shouldPrepare: false,
       recipe: null,
       raspberryPayload: null,
       raspberryResponse: null
     };
 
-    // Si se detectó un cóctel Y está confirmado, preparar y enviar
-    if (cocktailRequest?.cocktailId && cocktailRequest.confirmed) {
-      const recipe = COCKTAIL_RECIPES[cocktailRequest.cocktailId as keyof typeof COCKTAIL_RECIPES];
-      finalResponse.shouldPrepare = true;
-      finalResponse.recipe = recipe;
-      finalResponse.raspberryPayload = generateRaspberryPayload(recipe, cocktailRequest.cocktailId);
+    // Procesar comando si existe
+    if (command && command.action === 'PREPARE' && command.cocktail_id) {
+      const recipe = COCKTAIL_RECIPES[command.cocktail_id as keyof typeof COCKTAIL_RECIPES];
 
-      console.log('🍹 RASPBERRY PI PAYLOAD:', JSON.stringify(finalResponse.raspberryPayload, null, 2));
+      if (recipe) {
+        console.log(`🤖 LLM ordenó preparar: ${command.cocktail_id}`);
+        finalResponse.shouldPrepare = true;
+        finalResponse.recipe = recipe;
+        finalResponse.raspberryPayload = generateRaspberryPayload(recipe, command.cocktail_id);
 
-      // Enviar al Raspberry Pi
-      try {
-        const raspberryResult = await sendToRaspberryPi(finalResponse.raspberryPayload);
-        finalResponse.raspberryResponse = raspberryResult;
-        console.log('✅ Cóctel enviado a preparar exitosamente');
-      } catch (error: any) {
-        console.error('❌ Error al enviar al Raspberry Pi:', error.message);
-        finalResponse.raspberryResponse = {
-          error: true,
-          message: `Error al comunicarse con el Raspberry Pi: ${error.message}`
-        };
+        console.log('🍹 RASPBERRY PI PAYLOAD:', JSON.stringify(finalResponse.raspberryPayload, null, 2));
+
+        // Enviar al Raspberry Pi
+        try {
+          // Nota: Podríamos hacer esto asíncrono si no queremos esperar la respuesta
+          // pero es mejor confirmar que se envió.
+          const raspberryResult = await sendToRaspberryPi(finalResponse.raspberryPayload);
+          finalResponse.raspberryResponse = raspberryResult;
+        } catch (error: any) {
+          console.error('❌ Error al enviar al Raspberry Pi:', error.message);
+          finalResponse.text += "\n\n(⚠️ Hubo un error de conexión con la máquina, pero tu orden fue procesada).";
+          finalResponse.raspberryResponse = {
+            error: true,
+            message: `Error al comunicarse con el Raspberry Pi: ${error.message}`
+          };
+        }
+      } else {
+        console.warn(`⚠️ LLM intentó preparar ID inválido: ${command.cocktail_id}`);
       }
     }
 
