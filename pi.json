@@ -1,0 +1,105 @@
+{
+    "pumps": {
+        "pump_1": {
+            "name": "Bomba 1 (Vino Tinto)",
+            "pin": 17,
+            "value": "vino_tinto"
+        },
+        "pump_2": {
+            "name": "Bomba 2 (Vino Blanco)",
+            "pin": 27,
+            "value": "vino_blanco"
+        },
+        "pump_3": {
+            "name": "Bomba 3 (Sangría)",
+            "pin": 22,
+            "value": "sangria"
+        },
+        "pump_4": {
+            "name": "Bomba 4 (Vino Rosa)",
+            "pin": 23,
+            "value": "vino_rosa_espumoso"
+        },
+        "pump_5": {
+            "name": "Bomba 5 (Fanta)",
+            "pin": 24,
+            "value": "fanta"
+        },
+        "pump_6": {
+            "name": "Bomba 6 (Coca-Cola)",
+            "pin": 25,
+            "value": "coca_cola"
+        }
+    },
+    "recipes": {
+        "tinto_de_verano": {
+            "name": "Tinto de Verano",
+            "ingredients": {
+                "vino_tinto": 45,
+                "fanta": 45
+            }
+        },
+        "sangria_preparada": {
+            "name": "Sangría Preparada",
+            "ingredients": {
+                "sangria": 50,
+                "fanta": 25
+            }
+        },
+        "sangria": {
+            "name": "Sangría",
+            "ingredients": {
+                "sangria": 50
+            }
+        },
+        "vino_blanco_spritz": {
+            "name": "Vino Blanco Spritz",
+            "ingredients": {
+                "vino_blanco": 45,
+                "fanta": 30
+            }
+        },
+        "sunset_mix": {
+            "name": "Sunset Mix",
+            "ingredients": {
+                "vino_rosa_espumoso": 30,
+                "fanta": 30
+            }
+        },
+        "vino_tinto": {
+            "name": "Vino Tinto",
+            "ingredients": {
+                "vino_tinto": 1000
+            }
+        },
+        "vino_rosa_espumoso": {
+            "name": "Vino Rosa Espumoso",
+            "ingredients": {
+                "vino_rosa_espumoso": 45
+            }
+        },
+        "vino_blanco": {
+            "name": "Vino Blanco",
+            "ingredients": {
+                "vino_blanco": 90
+            }
+        },
+        "coca_cola": {
+            "name": "Coca-Cola",
+            "ingredients": {
+                "coca_cola": 45
+            }
+        },
+        "fanta": {
+            "name": "Fanta",
+            "ingredients": {
+                "fanta": 45
+            }
+        }
+    },
+    "config": {
+        "flow_rate": 0.9,
+        "max_preparation_time": 30,
+        "cleanup_delay": 2
+    }
+}
