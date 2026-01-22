@@ -1,0 +1,5 @@
+831774a jkj
+1799f2d k
+e0bfd34 feat: Implement 'JURADO' cocktail mode with dynamic ingredient quantities, updated pump flow rates, and refined cocktail recipes.
+191ef03 hola
+32af326 feat: Refactor cocktail order detection to use LLM-generated JSON commands and introduce .env for configuration.

@@ -1,0 +1,5 @@
+commit 15b482ba2abff2b2f9e2f0d98010956f5d91d4d7
+Author: Thepropollo <ramonb634@gmail.com>
+Date:   Thu Jan 22 07:58:07 2026 -0500
+
+    feat: Implement 'JURADO' cocktail mode and update configurations

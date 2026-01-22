@@ -1,0 +1,5 @@
+commit 32af3264e5db9098c56e7789f7b78bdcaafc9653
+Author: Thepropollo <ramonb634@gmail.com>
+Date:   Mon Jan 19 21:45:02 2026 -0500
+
+    feat: Refactor cocktail order detection to use LLM-generated JSON commands and introduce .env for configuration.
