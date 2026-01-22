@@ -3,102 +3,101 @@
         "pump_1": {
             "name": "Bomba 1 (Vino Tinto)",
             "pin": 17,
-            "value": "vino_tinto"
+            "value": "vino_tinto",
+            "flow_rate": 4.7
         },
         "pump_2": {
             "name": "Bomba 2 (Vino Blanco)",
             "pin": 27,
-            "value": "vino_blanco"
+            "value": "vino_blanco",
+            "flow_rate": 4.2
         },
         "pump_3": {
             "name": "Bomba 3 (Sangría)",
             "pin": 22,
-            "value": "sangria"
+            "value": "sangria",
+            "flow_rate": 4.7
         },
         "pump_4": {
             "name": "Bomba 4 (Vino Rosa)",
             "pin": 23,
-            "value": "vino_rosa_espumoso"
+            "value": "vino_rosa",
+            "flow_rate": 4.7
         },
         "pump_5": {
-            "name": "Bomba 5 (Fanta)",
+            "name": "Bomba 5 (Coca-Cola)",
             "pin": 24,
-            "value": "fanta"
+            "value": "coca_cola",
+            "flow_rate": 4.1
         },
         "pump_6": {
-            "name": "Bomba 6 (Coca-Cola)",
+            "name": "Bomba 6 (Fanta)",
             "pin": 25,
-            "value": "coca_cola"
+            "value": "fanta",
+            "flow_rate": 1.2
         }
     },
     "recipes": {
         "tinto_de_verano": {
-            "name": "Tinto de Verano",
+            "name": "Calimocho",
             "ingredients": {
-                "vino_tinto": 45,
-                "fanta": 45
-            }
-        },
-        "sangria_preparada": {
-            "name": "Sangría Preparada",
-            "ingredients": {
-                "sangria": 50,
-                "fanta": 25
+                "vino_tinto": 90,
+                "coca_cola": 120
             }
         },
         "sangria": {
             "name": "Sangría",
             "ingredients": {
-                "sangria": 50
+                "sangria": 100
             }
         },
         "vino_blanco_spritz": {
             "name": "Vino Blanco Spritz",
             "ingredients": {
-                "vino_blanco": 45,
-                "fanta": 30
+                "vino_blanco": 90,
+                "fanta": 120
             }
         },
         "sunset_mix": {
             "name": "Sunset Mix",
             "ingredients": {
-                "vino_rosa_espumoso": 30,
-                "fanta": 30
+                "vino_rosa": 90,
+                "fanta": 120
             }
         },
         "vino_tinto": {
             "name": "Vino Tinto",
             "ingredients": {
-                "vino_tinto": 1000
+                "vino_tinto": 100
             }
         },
-        "vino_rosa_espumoso": {
-            "name": "Vino Rosa Espumoso",
+        "vino_rosa": {
+            "name": "Vino Rosa",
             "ingredients": {
-                "vino_rosa_espumoso": 45
+                "vino_rosa": 100
             }
         },
         "vino_blanco": {
             "name": "Vino Blanco",
             "ingredients": {
-                "vino_blanco": 90
+                "vino_blanco": 100
             }
         },
         "coca_cola": {
             "name": "Coca-Cola",
             "ingredients": {
-                "coca_cola": 45
+                "coca_cola": 120
             }
         },
         "fanta": {
             "name": "Fanta",
             "ingredients": {
-                "fanta": 45
+                "fanta": 120
             }
         }
     },
     "config": {
-        "flow_rate": 0.9,
+        "flow_rate": 0.22,
         "max_preparation_time": 30,
         "cleanup_delay": 2
     }
